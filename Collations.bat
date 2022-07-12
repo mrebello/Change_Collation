@@ -1,0 +1,1 @@
+cscs -dir:"C:\\Program Files (x86)\\Microsoft SQL Server Management Studio 18\\Common7\\IDE\\" -r:Microsoft.SqlServer.Smo.dll,Microsoft.SqlServer.Management.Sdk.Sfc.dll,Microsoft.SqlServer.ConnectionInfo.dll,Microsoft.SqlServer.SqlEnum.dll Collations.cs
