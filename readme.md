@@ -42,6 +42,7 @@ Para a execução, deixo como recomendação utilizar o [cscs.exe](https://githu
 4. Fazer a alteração do collation default
 5. Executar scripts para alteração das tabelas
 6. Executar scripts para recriação das restrições
+7. Extra - recompilar todas as funções e procedimentos
 
 ### 1. Verificação da possibilidade de alteração
 Ao alterar o COLLATION para um menos restritivo (como _AS_CI para _AI_CI por exemplo) deve-se primeiramente garantir que os dados permitem essa alteração.
@@ -84,7 +85,30 @@ O script criado pelo collations.cs faz a alteração em todos os campos texto (c
 ### 6. Executar scripts para recriação das restrições
 Esse é o passo mais demorado, pois como o passo 3 excluiu todas os índices e chaves do banco, o script criado pelo _creates.cs_ recria todos os índices da base. Em bases grandes isso pode levar bastante tempo.
 
+### 7. Extra - recompilar todas as funções e procedimentos
+Após as alterações, é recomendável também _recompilar_ todos os procedimentos e funções, pois esse passo não é verificado pelo SQL Server e pode gerar erros na hora de executar os procedimentos e funções.
+O script SQL abaixo _tenta_ recompilar todos os procedimentos e funções do banco e informa os erros onde houverem.
+Os erros podem ser gerados por collations diferentes utilizados em concatenação de campos, por exemplo, quando existirem collations explícitos nos procedimentos.
 
+    declare cur cursor for 
+      select quotename(s.name) + '.' + quotename(o.name) as procname
+        from sys.sql_modules m
+          inner join sys.objects o on m.object_id=o.object_id
+          inner join sys.schemas s on o.schema_id = s.schema_id
+    declare @procname sysname;
+    open cur
+    while 1=1 begin
+      fetch next from cur into @procname;
+      if @@FETCH_STATUS<>0 BREAK
+      BEGIN TRY  
+        exec sp_refreshsqlmodule @procname;
+      END TRY  
+      BEGIN CATCH  
+        print 'ERRO em ' + @procname + ': ' + ERROR_MESSAGE()
+      END CATCH 
+    end
+    close cur
+    deallocate cur
 
 
 
